@@ -1,4 +1,5 @@
 const userSchema = require('../models/userModel');
+const jwt = require('jsonwebtoken');
 const dummyNews = [
   {
     id: 1,
@@ -20,12 +21,21 @@ const dummyNews = [
   },
 ];
 
-const getNews = (req, res) => {
+const getNews = async (req, res) => {
     const token = req.headers.authorization?.split(' ')[1];
     if (!token) {
         return res.status(401).json({ message: 'Authorization token missing.' });
     }
+     const userData = jwt.verify(token, process.env.JWT_SECRET);
+     req.user = userData;
+    const userId = req.user.userId;
 
+    const user = await userSchema.findById(userId);
+    if (!user) {
+        return res.status(404).json({ message: 'User not found.' });
+    }
+
+    // Here, you can customize the news based on user preferences if needed
     res.status(200).json({ news: dummyNews });
 };
 
