@@ -1,6 +1,8 @@
 const router = require('express').Router();
-const { getNews } = require('../middlewares/newsLogic');
+const { getNews } = require('../controllers/newsLogic');
+const verifyToken = require('../middlewares/verifyToken');
 
-router.get('/', getNews);
+router.get('/', verifyToken, getNews);
+
 
 module.exports = router;

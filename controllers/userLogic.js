@@ -1,14 +1,23 @@
+require('dotenv').config();
 const userSchema = require('../models/userModel');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-require('dotenv').config();
-
+const joi = require('joi');
 // User Signup Logic
 async function signup(req, res) {
     try {
         const { name, email, password, preferences } = req.body;
-        if (!name || !email || !password) {
-            return res.status(400).json({ message: 'Name, email, and password are required.' });
+        
+        const schema = joi.object({
+            name: joi.string().min(2).max(100).required(),
+            email: joi.string().email().required(),
+            password: joi.string().min(6).required(),
+            preferences: joi.array().items(joi.string()).optional()
+        });
+
+        const { error } = schema.validate({ name, email, password, preferences });
+        if (error) {
+            return res.status(400).json({ message: error.details[0].message });
         }
         const existingUser = await userSchema.findOne({ email });
         if (existingUser) {
@@ -57,9 +66,10 @@ const getPreferences = async (req, res) => {
         if (!token) {
             return res.status(401).json({ message: 'Authorization token missing.' });
         }
-        const userData = jwt.verify(token, process.env.JWT_SECRET);
-        req.user = userData;
-        const userId = req.user.userId;
+           const userId = req.userId;
+        if (!userId) {
+            return res.status(401).json({ message: 'Invalid token.' });
+        }
         const user = await userSchema.findById(userId);
         if (!user) {
             return res.status(404).json({ message: 'User not found.' });
@@ -76,9 +86,10 @@ const updatePreferences = async (req, res) => {
         if (!token) {
             return res.status(401).json({ message: 'Authorization token missing.' });
         }
-        const userData = jwt.verify(token, process.env.JWT_SECRET);
-        req.user = userData;
-        const userId = req.user.userId;
+           const userId = req.userId;
+        if (!userId) {
+            return res.status(401).json({ message: 'Invalid token.' });
+        }
         const { preferences } = req.body;
         const user = await userSchema.findById(userId);
         if (!user) {
@@ -91,6 +102,7 @@ const updatePreferences = async (req, res) => {
         res.status(500).json({ message: 'Internal server error.' });
     }
 };
+
 
 module.exports = {
     signup,
