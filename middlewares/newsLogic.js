@@ -1,5 +1,6 @@
 const userSchema = require('../models/userModel');
 const jwt = require('jsonwebtoken');
+const axios = require('axios');
 const dummyNews = [
   {
     id: 1,
@@ -34,9 +35,13 @@ const getNews = async (req, res) => {
     if (!user) {
         return res.status(404).json({ message: 'User not found.' });
     }
-
+    const preferences = user.preferences || [];
+    const queryParams = preferences.length
+      ? `?q=${preferences.join(',')}`
+      : '';
+      const news = await axios.get(`https://newsapi.org/v2/everything${queryParams}&apiKey=${process.env.NEWS_API_KEY}`); 
     // Here, you can customize the news based on user preferences if needed
-    res.status(200).json({ news: dummyNews });
+    res.status(200).json({ news: news.data.articles || dummyNews });
 };
 
 module.exports = {
